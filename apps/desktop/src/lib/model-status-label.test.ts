@@ -15,7 +15,7 @@ describe('model-status-label', () => {
     expect(displayModelName('claude-opus-5[1m]')).not.toContain('[')
   })
 
-  it('renders Copilot\'s dash-suffixed 1M variant as the same clean tag, never a mangled literal', () => {
+  it("renders Copilot's dash-suffixed 1M variant as the same clean tag, never a mangled literal", () => {
     // Copilot's own model catalog reports the 1M variant with a plain dash
     // suffix (no brackets) instead of Anthropic's native `[1m]` route suffix.
     expect(modelDisplayParts('claude-opus-4-6-1m')).toEqual({ name: 'Opus 4.6', tag: '1M' })
