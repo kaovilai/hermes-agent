@@ -123,6 +123,7 @@ import { shouldAttemptCloudBootCascade } from './cloud-boot-cascade'
 import { discoverWithTeamFallback } from './cloud-discovery'
 import { createCloudSessionRecovery } from './cloud-session-recovery'
 import { installCommandScreenshot } from './command-screenshot'
+import { composerImageTimestamp } from './composer-image-name'
 import { writeComposerPaste } from './composer-paste'
 import { applyConnectionChange, teardownSshState } from './connection-apply'
 import {
@@ -147,6 +148,7 @@ import {
   modeIsRemoteLike,
   normalizeRemoteBaseUrl,
   normalizeRemoteHeaders,
+  normalizeRemoteProfileName,
   normalizeSshConfig,
   normAuthMode,
   pathForRegistryBackendRequest,
@@ -587,6 +589,7 @@ import {
   bindGeometryPersistence,
   computeWindowOptions,
   debounce,
+  firstLaunchSize,
   sanitizeWindowState,
   MIN_HEIGHT as WINDOW_MIN_HEIGHT,
   MIN_WIDTH as WINDOW_MIN_WIDTH
@@ -6078,7 +6081,7 @@ async function writeComposerImage(buffer, ext = '.png', name = '') {
   const safeExt = /^\.[a-z0-9]{1,5}$/.test(normalizedExt) ? normalizedExt : '.png'
   const dir = path.join(app.getPath('userData'), 'composer-images')
   await fs.promises.mkdir(dir, { recursive: true })
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').replace('Z', '')
+  const stamp = composerImageTimestamp()
   const random = crypto.randomBytes(3).toString('hex')
 
   const baseName = String(name || '')
@@ -8819,6 +8822,7 @@ function sanitizeConnectionProfiles(raw: Record<string, any>) {
       headers?: object
       org?: string
       name?: string
+      remoteProfile?: string
       savedSsh?: object
     } = {
       mode: modeIsRemoteLike(entry.mode) ? entry.mode : 'local'
@@ -8842,6 +8846,14 @@ function sanitizeConnectionProfiles(raw: Record<string, any>) {
 
     if ((entry as any).token && typeof entry.token === 'object') {
       cleaned.token = entry.token
+    }
+
+    // A URL-remote/cloud per-profile override can map its Desktop routing label
+    // onto the backend's profile namespace (same contract as SSH remoteProfile).
+    const remoteProfileName = normalizeRemoteProfileName((entry as any).remoteProfile)
+
+    if (remoteProfileName) {
+      cleaned.remoteProfile = remoteProfileName.remoteProfile
     }
 
     const headers = normalizeRemoteHeaders((entry as any).headers)
@@ -9391,12 +9403,20 @@ async function sanitizeDesktopConnectionConfig(config = readDesktopConnectionCon
 // `org` (optional) is the Hermes Cloud org slug/id the instance was discovered
 // under — persisted so Settings can reopen into the same org; omitted from the
 // block when empty so plain remote connections stay unchanged.
-function buildRemoteBlock(remoteUrl, authMode, token, org?: string, headers?: object, name?: string) {
+function buildRemoteBlock(remoteUrl, authMode, token, org?: string, headers?: object, name?: string, remoteProfile?: string) {
   if (authMode !== 'oauth' && !decryptDesktopSecret(token)) {
     throw new Error('Remote gateway session token is required.')
   }
 
-  const block: { url: string; authMode: string; token: object; headers?: object; org?: string; name?: string } = {
+  const block: {
+    url: string
+    authMode: string
+    token: object
+    headers?: object
+    org?: string
+    name?: string
+    remoteProfile?: string
+  } = {
     url: normalizeRemoteBaseUrl(remoteUrl),
     authMode,
     token
@@ -9418,6 +9438,12 @@ function buildRemoteBlock(remoteUrl, authMode, token, org?: string, headers?: ob
 
   if (orgValue) {
     block.org = orgValue
+  }
+
+  const remoteProfileName = normalizeRemoteProfileName(remoteProfile)
+
+  if (remoteProfileName) {
+    block.remoteProfile = remoteProfileName.remoteProfile
   }
 
   return block
@@ -9507,7 +9533,7 @@ function coerceDesktopConnectionConfig(input: any = {}, existing = readDesktopCo
     if (remoteLike) {
       profiles[key] = {
         mode,
-        ...buildRemoteBlock(remoteUrl, authMode, nextToken, cloudOrg, remoteHeaders, cloudName)
+        ...buildRemoteBlock(remoteUrl, authMode, nextToken, cloudOrg, remoteHeaders, cloudName, input.remoteProfile)
       }
     } else {
       const localEntry = localProfileEntry(rawExistingBlock)
@@ -10899,15 +10925,17 @@ function profileRouteOptions(
 ): ProfileRouteOptions {
   const config = readDesktopConnectionConfig()
   const sshOverride = profileSshOverride(config, profile)
+  const urlOverride = profileRemoteOverride(config, profile)
   const key = connectionScopeKey(profile) || primaryProfileKey()
 
   return {
     // A desktop profile can be only a client-side routing alias. Keep backend
-    // endpoint filters in the SSH target's namespace (e.g. mara → default).
-    backendProfile: sshOverride?.remoteProfile,
+    // endpoint filters in the target's namespace (e.g. mara → default for a
+    // managed SSH, gris → main-gris for a URL-remote/cloud per-profile host).
+    backendProfile: sshOverride?.remoteProfile || urlOverride?.remoteProfile,
     globalRemote: globalRemoteActive(),
     primaryProfile: primaryProfileKey(),
-    profileRemoteOverride: Boolean(profileRemoteOverride(config, profile) || sshOverride),
+    profileRemoteOverride: Boolean(urlOverride || sshOverride),
     // The primary profile's own backend resolves to a remote host (its
     // per-profile override, env, or global). Unknown sub-profiles on that
     // gateway must route THROUGH it, not spawn local backends (#88296).
@@ -13767,7 +13795,10 @@ const instanceWindows = new Set<any>()
 // pure cascade math lives in session-windows.ts (instanceWindowBounds).
 function nextInstanceBounds(source: BrowserWindow | null = BrowserWindow.getFocusedWindow() || mainWindow) {
   const displays = screen.getAllDisplays()
-  const fallback = computeWindowOptions(readWindowState(), displays)
+  const fallback = computeWindowOptions(
+    readWindowState() ?? firstLaunchSize(screen.getPrimaryDisplay().workArea),
+    displays
+  )
   const base = source && !source.isDestroyed() ? source.getBounds() : null
 
   return instanceWindowBounds(base, fallback, displays)
@@ -14860,7 +14891,10 @@ function createWindow() {
   const icon = getAppIconPath()
   const savedWindowState = readWindowState()
   mainWindow = new BrowserWindow({
-    ...computeWindowOptions(savedWindowState, screen.getAllDisplays()),
+    ...computeWindowOptions(
+      savedWindowState ?? firstLaunchSize(screen.getPrimaryDisplay().workArea),
+      screen.getAllDisplays()
+    ),
     minWidth: WINDOW_MIN_WIDTH,
     minHeight: WINDOW_MIN_HEIGHT,
     title: 'Hermes',
