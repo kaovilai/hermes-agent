@@ -414,6 +414,7 @@ class HermesTokenStorage:
     ``.client.json`` (client info), ``.meta.json`` (server metadata), ``.cimd-off`` (CIMD refused)."""
 
     def __init__(self, server_name: str, *, hermes_home: str | Path | None = None):
+        self.server_name = server_name  # unsanitized: the real mcp_servers config key
         self._server_name = _safe_filename(server_name)
         self._hermes_home = Path(hermes_home) if hermes_home is not None else None
         # Issuer binding: ``loaded_issuer`` is what the token file on disk recorded (the authorization
@@ -782,11 +783,17 @@ def _announce_authorization_url(
     print(f"  ({note})\n", file=sys.stderr)
 
 
-def _make_redirect_handler(port: int, redirect_uri: str | None = None, redirect_host: str | None = None):
+def _make_redirect_handler(
+    port: int, redirect_uri: str | None = None, redirect_host: str | None = None,
+    server_name: str | None = None,
+):
     """Redirect handler closing over this flow's port (a closure, not ``_oauth_port``, keeps concurrent
     flows isolated). ``redirect_uri`` is a configured proxy callback (None for loopback) and only tailors the
     hint; ``redirect_host`` is the loopback hostname the provider will actually redirect to (see
-    :func:`_resolve_redirect_uri`).
+    :func:`_resolve_redirect_uri`). ``server_name`` lets the handler re-check ``enabled`` against config AS
+    IT STANDS NOW, right before opening a browser: a discovery/reconcile pass can be stale (a server
+    disabled mid-flow, or whose reconcile tick hasn't caught up yet, must never still pop a browser tab) —
+    this is the last gate before user-visible side effects, independent of any caller's own enabled check.
 
     Using a closure instead of reading the module-level ``_oauth_port`` avoids cross-server state pollution
     when multiple MCP servers run OAuth concurrently (fixes #44588).
@@ -796,6 +803,17 @@ def _make_redirect_handler(port: int, redirect_uri: str | None = None, redirect_
         if dashboard_flow is not None:
             await dashboard_flow.publish_authorization_url(authorization_url)
             return
+        if server_name is not None:
+            from tools.mcp_tool_common import mcp_server_enabled
+            try:
+                from hermes_cli.config import load_config as _load_cfg
+                live_cfg = (_load_cfg() or {}).get("mcp_servers", {}).get(server_name) or {}
+            except Exception:
+                live_cfg = {}
+            if not mcp_server_enabled(live_cfg):
+                raise OAuthNonInteractiveError(
+                    f"MCP server '{server_name}' was disabled before browser authorization opened; "
+                    "skipping the OAuth flow.")
         # Fail fast when non-interactive: a cached-but-unusable token makes the SDK fall through to the
         # authorization-code flow past the token-file guard, and the waiter would block for the full timeout.
         # Fail fast at the authorization boundary in non-interactive contexts (systemd gateway, cron,
