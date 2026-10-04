@@ -229,7 +229,7 @@ _EXCHANGE_USER_AGENT = "GitHubCopilotChat/0.26.7"
 # of GitHub's own Copilot CLI; the header mechanism itself is corroborated by other open-source
 # Copilot clients that send it on every request (e.g. github/gh-cli, opencode, zed-industries/zed,
 # the copilot-api crate) even though none of those observed this exact dated value yet.
-_GITHUB_API_VERSION = "2026-08-01"
+_GITHUB_API_VERSION = "2026-03-10"
 
 # Transient-failure hardening: gateway startup races network readiness, and a single-shot
 # exchange failing there silently degrades to the RAW GitHub token, whose integrator allowlist
