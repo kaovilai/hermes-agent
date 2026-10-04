@@ -860,6 +860,52 @@ class TestNonInteractiveFailFastAtCallbackBoundary:
         err = capsys.readouterr().err
         assert "https://idp.example.com/authorize?x=9" in err
 
+    def test_redirect_handler_rejects_when_server_disabled_live(self, monkeypatch, capsys):
+        """A server disabled in config.yaml AFTER discovery/reconcile queued this OAuth flow (or
+        whose reconcile tick hasn't caught up yet -- the multiplexed-profile gap this guard exists
+        for) must never still open a browser tab. ``server_name`` lets the handler re-check
+        ``enabled`` against the config AS IT STANDS NOW, independent of whatever the caller
+        believed when the flow started."""
+        import tools.mcp_oauth as mod
+        import asyncio
+
+        monkeypatch.setattr(mod, "_is_interactive", lambda: True)
+        monkeypatch.setattr(
+            "hermes_cli.config.load_config",
+            lambda: {"mcp_servers": {"robinhood_trading": {"enabled": False}}},
+        )
+        monkeypatch.setattr(
+            "webbrowser.open", MagicMock(side_effect=AssertionError("must not open browser"))
+        )
+
+        handler = mod._make_redirect_handler(49303, server_name="robinhood_trading")
+        with pytest.raises(OAuthNonInteractiveError, match="disabled"):
+            asyncio.run(handler("https://agent.robinhood.com/authorize?x=1"))
+
+        err = capsys.readouterr().err
+        assert "https://agent.robinhood.com/authorize" not in err
+
+    def test_redirect_handler_proceeds_when_server_still_enabled_live(self, monkeypatch, capsys):
+        """Positive control: the live re-check must not over-fire for a server that is still
+        enabled -- the common case stays interactive exactly as before."""
+        import tools.mcp_oauth as mod
+        import asyncio
+
+        monkeypatch.setattr(mod, "_is_interactive", lambda: True)
+        monkeypatch.setattr(
+            "hermes_cli.config.load_config",
+            lambda: {"mcp_servers": {"robinhood_trading": {"enabled": True}}},
+        )
+        monkeypatch.delenv("SSH_CLIENT", raising=False)
+        monkeypatch.delenv("SSH_TTY", raising=False)
+        monkeypatch.setattr(mod, "_can_open_browser", lambda: False)
+
+        handler = mod._make_redirect_handler(49304, server_name="robinhood_trading")
+        asyncio.run(handler("https://agent.robinhood.com/authorize?x=2"))
+
+        err = capsys.readouterr().err
+        assert "https://agent.robinhood.com/authorize?x=2" in err
+
 
 # ---------------------------------------------------------------------------
 # Extracted helper tests (Task 3 of MCP OAuth consolidation)
