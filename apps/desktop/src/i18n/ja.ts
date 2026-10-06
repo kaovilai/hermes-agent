@@ -2,6 +2,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale } from './define-locale'
 import { introJa } from './intro-ja'
+import { jaAuxTasks } from './ja_aux_tasks'
 import { jaModelMenu } from './ja_model_menu'
 import { jaPluginSettings } from './ja_plugins'
 
@@ -285,7 +286,7 @@ export const ja = defineLocale({
       inputTitleNamed: session => `入力が必要です — ${session}`,
       inputBody: 'Hermes が応答を待っています。',
       turnDoneTitle: 'Hermes が完了しました',
-      turnDoneBody: '',
+      turnDoneBody: 'メッセージが完了しました。',
       turnErrorTitle: 'ターンが失敗しました',
       backgroundDoneTitle: 'バックグラウンドタスクが完了しました',
       backgroundFailedTitle: 'バックグラウンドタスクが失敗しました',
@@ -1231,6 +1232,8 @@ export const ja = defineLocale({
         'サポートされていないリモートプラットフォームです。Hermes Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
       sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',
       sshErrUpdateRequired: 'Desktop SSH で接続する前に、リモートホストの Hermes を更新してください。',
+      sshErrInteractiveAuth:
+        'Tailscale SSH では対話的なブラウザー確認が必要です。ターミナルで `ssh <host> true` を実行して確認を完了し、再試行してください。Hermes は SSH を非対話的に実行します。',
       sshErrUnknown: 'SSH 接続に失敗しました。'
     },
     keys: {
@@ -1333,20 +1336,10 @@ export const ja = defineLocale({
       change: '変更',
       autoUseMain: '自動 · メインモデルを使用',
       inheritMainEffort: '継承 · メインモデルの推論強度',
+      inheritsFrom: task => `${task} を継承`,
+      followTask: task => `${task} に従う`,
       providerDefault: '(プロバイダーのデフォルト)',
-      tasks: {
-        vision: { label: 'ビジョン', hint: '画像分析' },
-        compression: { label: '圧縮', hint: 'コンテキストの圧縮' },
-        skills_hub: { label: 'スキルハブ', hint: 'スキル検索' },
-        approval: { label: '承認', hint: 'スマート自動承認' },
-        mcp: { label: 'MCP', hint: 'MCP ツールルーティング' },
-        title_generation: { label: 'タイトル生成', hint: 'セッションタイトル' },
-        review: { label: 'レビュー', hint: '/review レビューサブエージェント' },
-        triage_specifier: { label: 'トリアージ指定', hint: 'カンバン仕様の具体化' },
-        kanban_decomposer: { label: 'カンバン分解', hint: 'タスク分解' },
-        profile_describer: { label: 'プロファイル記述', hint: 'プロファイル概要の自動生成' },
-        curator: { label: 'キュレーター', hint: 'スキル使用レビュー' }
-      }
+      tasks: jaAuxTasks
     },
     localModels: {
       connectionChanged: 'ローカルモデルの接続が変更されました',
@@ -3408,6 +3401,9 @@ export const ja = defineLocale({
       showTerminal: 'ターミナルを表示',
       hideTerminal: 'ターミナルを非表示',
       gateway: 'ゲートウェイ',
+      backend: 'バックエンド',
+      messagingStopped: 'メッセージング停止',
+      messagingDegraded: name => `${name} 停止`,
       gatewayReady: '準備完了',
       gatewayNeedsSetup: '設定が必要',
       gatewayUnavailable: '推論を利用できません',

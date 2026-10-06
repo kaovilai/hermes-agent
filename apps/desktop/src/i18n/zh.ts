@@ -2,6 +2,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale } from './define-locale'
 import { introZh } from './intro-zh'
+import { zhAuxTasks } from './zh_aux_tasks'
 import { zhModelMenu } from './zh_model_menu'
 
 export const zh = defineLocale({
@@ -313,7 +314,7 @@ export const zh = defineLocale({
       inputTitleNamed: session => `需要输入 — ${session}`,
       inputBody: 'Hermes 正在等待你的回应。',
       turnDoneTitle: 'Hermes 已完成',
-      turnDoneBody: '',
+      turnDoneBody: '消息已完成。',
       turnErrorTitle: '本轮失败',
       backgroundDoneTitle: '后台任务已完成',
       backgroundFailedTitle: '后台任务失败',
@@ -1624,6 +1625,8 @@ export const zh = defineLocale({
       sshErrPlatform: '不支持的远程平台。Hermes Desktop 的 SSH 模式支持 Linux、macOS 和 Windows 远程主机。',
       sshErrTimeout: 'SSH 连接超时。主机可能无法访问或处于休眠状态。',
       sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Hermes。',
+      sshErrInteractiveAuth:
+        'Tailscale SSH 需要交互式浏览器验证。请在终端运行 `ssh <host> true` 完成验证后重试——Hermes 以非交互方式运行 SSH。',
       sshErrUnknown: 'SSH 连接失败。'
     },
     keys: {
@@ -1723,6 +1726,8 @@ export const zh = defineLocale({
       change: '更改',
       autoUseMain: '自动 · 使用主模型',
       inheritMainEffort: '继承 · 主模型推理强度',
+      inheritsFrom: task => `继承 ${task}`,
+      followTask: task => `跟随 ${task}`,
       providerDefault: '(提供方默认)',
       fallbackAdd: '添加备用模型',
       fallbackEmpty: '未配置备用模型 — 默认模型失败时才会使用备用模型。',
@@ -1734,19 +1739,7 @@ export const zh = defineLocale({
       moaAggregator: '聚合模型',
       moaAggregatorBilled: '执行模型 · 整个运行在此计费',
       moaReferenceHint: '默认每轮仅建议一次',
-      tasks: {
-        vision: { label: '视觉', hint: '图片分析' },
-        compression: { label: '压缩', hint: '上下文压缩' },
-        skills_hub: { label: '技能中心', hint: '技能搜索' },
-        approval: { label: '审批', hint: '智能自动批准' },
-        mcp: { label: 'MCP', hint: 'MCP 工具路由' },
-        title_generation: { label: '标题生成', hint: '会话标题' },
-        review: { label: '评审', hint: '/review 评审子智能体' },
-        triage_specifier: { label: '分类指定', hint: '看板任务规格补全' },
-        kanban_decomposer: { label: '看板分解', hint: '任务拆解' },
-        profile_describer: { label: '配置描述', hint: '自动生成配置描述' },
-        curator: { label: '维护器', hint: '技能使用审查' }
-      }
+      tasks: zhAuxTasks
     },
     localModels: {
       connectionChanged: '本地模型连接已更改',
@@ -4376,6 +4369,9 @@ export const zh = defineLocale({
       showTerminal: '显示终端',
       hideTerminal: '隐藏终端',
       gateway: '网关',
+      backend: '后端',
+      messagingStopped: '消息网关已停止',
+      messagingDegraded: name => `${name} 异常`,
       gatewayReady: '就绪',
       gatewayNeedsSetup: '需要设置',
       gatewayUnavailable: '推理不可用',

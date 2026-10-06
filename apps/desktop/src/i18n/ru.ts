@@ -1,6 +1,7 @@
 import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale } from './define-locale'
+import { ruAuxTasks } from './ru_aux_tasks'
 import { ruModelMenu } from './ru_model_menu'
 import { ruPluginSettings } from './ru_plugins'
 
@@ -1348,6 +1349,8 @@ export const ru = defineLocale({
         'Неподдерживаемая удалённая платформа. SSH-режим Hermes Desktop поддерживает удалённые хосты Linux, macOS и Windows.',
       sshErrTimeout: 'SSH-соединение истекло. Хост может быть недоступен или «спит».',
       sshErrUpdateRequired: 'Перед подключением через SSH обновите Hermes на удалённой машине.',
+      sshErrInteractiveAuth:
+        'Tailscale SSH требует интерактивной проверки в браузере. Выполните `ssh <host> true` в терминале, завершите проверку и повторите попытку — Hermes запускает SSH неинтерактивно.',
       sshErrUnknown: 'SSH-соединение не удалось.'
     },
     keys: {
@@ -1452,20 +1455,14 @@ export const ru = defineLocale({
       change: 'Изменить',
       autoUseMain: 'авто · использовать основную модель',
       inheritMainEffort: 'наследовать · усилие основной модели',
+      inheritsFrom: task => `наследует ${task}`,
+      followTask: task => `Как ${task}`,
       providerDefault: '(по умолчанию провайдера)',
       fallbackAdd: 'Добавить запасную',
       fallbackEmpty: 'Запасных моделей нет — используется модель по умолчанию, если она не падает.',
       notInCatalog: 'нет в списке моделей этого провайдера — вызовы могут уходить на запасную.',
       moaTitle: 'Смесь агентов',
-      tasks: {
-        vision: { label: 'Зрение', hint: 'Анализ изображений' },
-        compression: { label: 'Сжатие', hint: 'Компрессия контекста' },
-        skills_hub: { label: 'Хаб навыков', hint: 'Поиск навыков' },
-        approval: { label: 'Одобрение', hint: 'Умное авто-одобрение' },
-        mcp: { label: 'MCP', hint: 'Маршрутизация MCP-инструментов' },
-        title_generation: { label: 'Ген. заголовка', hint: 'Заголовки сеансов' },
-        curator: { label: 'Куратор', hint: 'Просмотр использования навыков' }
-      }
+      tasks: ruAuxTasks
     },
     providers: {
       connectAccount: 'Подключить аккаунт',
@@ -3586,6 +3583,9 @@ export const ru = defineLocale({
       showTerminal: 'Показать терминал',
       hideTerminal: 'Скрыть терминал',
       gateway: 'Шлюз',
+      backend: 'Бэкенд',
+      messagingStopped: 'шлюз сообщений остановлен',
+      messagingDegraded: name => `${name} недоступен`,
       gatewayReady: 'готов',
       gatewayNeedsSetup: 'нужна настройка',
       gatewayChecking: 'проверка',

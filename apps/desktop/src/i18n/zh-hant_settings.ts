@@ -960,6 +960,8 @@ export const zhHantSettings = {
       sshErrPlatform: '不支援的遠端平台。Hermes Desktop 的 SSH 模式支援 Linux、macOS 和 Windows 遠端主機。',
       sshErrTimeout: 'SSH 連線逾時。主機可能無法存取或處於睡眠狀態。',
       sshErrUpdateRequired: '使用 Desktop SSH 連線前，請更新遠端主機上的 Hermes。',
+      sshErrInteractiveAuth:
+        'Tailscale SSH 需要互動式瀏覽器驗證。請在終端機執行 `ssh <host> true` 完成驗證後重試——Hermes 以非互動方式執行 SSH。',
       sshErrUnknown: 'SSH 連線失敗。'
     },
     keys: {
@@ -1048,6 +1050,8 @@ export const zhHantSettings = {
       change: '變更',
       autoUseMain: '自動 · 使用主要模型',
       inheritMainEffort: '繼承 · 主要模型推理強度',
+      inheritsFrom: task => `繼承 ${task}`,
+      followTask: task => `跟隨 ${task}`,
       providerDefault: '(提供方預設)',
       moaTitle: '混合代理（Mixture of Agents）',
       moaPreset: '預設',
