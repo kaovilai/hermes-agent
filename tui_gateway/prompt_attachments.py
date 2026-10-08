@@ -235,7 +235,7 @@ def _stage_session_file_attachment(
         import re as _re
         try:
             payload = _b64_payload(
-                data_url, r"^data:[^;,]*(?:;[^;,=]+=[^;,]+)*;base64,(.*)$", _re.DOTALL | _re.I)
+                data_url, r"^data:[^;,]*(?:;[^;,=]+=[^;,]+)*;base64,(.*)$", _re.DOTALL | _re.IGNORECASE)
         except (ValueError, _binascii.Error) as exc:
             raise ValueError("invalid data_url payload") from exc
         # A paste's display label ("Pasted content (12 KB)") is not a file name; keep the paste's own.
